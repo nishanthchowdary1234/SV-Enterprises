@@ -12,7 +12,7 @@ BEGIN
   
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- 3. Create Trigger on order_items
 DROP TRIGGER IF EXISTS on_order_item_created ON public.order_items;

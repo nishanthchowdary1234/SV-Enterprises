@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import HeroSection from '@/components/home/HeroSection';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ShoppingCart } from 'lucide-react';
+import { ArrowRight, ShoppingCart, Minus, Plus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/supabase';
 import { useCartStore } from '@/store/useCartStore';
@@ -14,7 +14,7 @@ type Product = Database['public']['Tables']['products']['Row'];
 export default function HomePage() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
-    const { addItem } = useCartStore();
+    const { addItem, items, updateQuantity } = useCartStore();
     const { toast } = useToast();
 
     const [loading, setLoading] = useState(true);
@@ -200,10 +200,37 @@ export default function HomePage() {
                                         </Link>
                                         <div className="flex items-center justify-between mt-auto pt-4">
                                             <span className="font-bold">₹{product.price.toFixed(2)}</span>
-                                            <Button size="sm" onClick={() => handleAddToCart(product)}>
-                                                <ShoppingCart className="h-4 w-4 mr-2" />
-                                                Add
-                                            </Button>
+                                            {(() => {
+                                                const cartItem = items.find(item => item.id === product.id);
+                                                return cartItem ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="icon"
+                                                            className="h-8 w-8"
+                                                            onClick={() => updateQuantity(product.id, cartItem.quantity - 1)}
+                                                        >
+                                                            <Minus className="h-3 w-3" />
+                                                        </Button>
+                                                        <span className="w-4 text-center text-sm font-medium">
+                                                            {cartItem.quantity}
+                                                        </span>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="icon"
+                                                            className="h-8 w-8"
+                                                            onClick={() => updateQuantity(product.id, cartItem.quantity + 1)}
+                                                        >
+                                                            <Plus className="h-3 w-3" />
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <Button size="sm" onClick={() => handleAddToCart(product)}>
+                                                        <ShoppingCart className="h-4 w-4 mr-2" />
+                                                        Add
+                                                    </Button>
+                                                );
+                                            })()}
                                         </div>
                                     </div>
                                 </div>

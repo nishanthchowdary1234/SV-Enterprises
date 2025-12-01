@@ -78,7 +78,7 @@ export default function SignupPage() {
                 <CardHeader>
                     <CardTitle className="text-2xl font-bold text-center">Create Account</CardTitle>
                     <CardDescription className="text-center">
-                        Join SV Traders today
+                        Join SV Enterprises today
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

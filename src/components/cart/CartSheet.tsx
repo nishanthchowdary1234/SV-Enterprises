@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
@@ -15,10 +16,11 @@ import {
 
 export default function CartSheet() {
     const { items, removeItem, updateQuantity, total } = useCartStore();
+    const [open, setOpen] = useState(false);
     const itemCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
     return (
-        <Sheet>
+        <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative">
                     <ShoppingBag className="h-5 w-5" />
@@ -102,7 +104,7 @@ export default function CartSheet() {
                                 <span>₹{total().toFixed(2)}</span>
                             </div>
                             <SheetFooter>
-                                <Button className="w-full" asChild>
+                                <Button className="w-full" asChild onClick={() => setOpen(false)}>
                                     <Link to="/checkout">Proceed to Checkout</Link>
                                 </Button>
                             </SheetFooter>
@@ -114,7 +116,7 @@ export default function CartSheet() {
                         <span className="text-lg font-medium text-gray-900 dark:text-gray-100">
                             Your cart is empty
                         </span>
-                        <Button variant="link" asChild>
+                        <Button variant="link" asChild onClick={() => setOpen(false)}>
                             <Link to="/products">Start Shopping</Link>
                         </Button>
                     </div>

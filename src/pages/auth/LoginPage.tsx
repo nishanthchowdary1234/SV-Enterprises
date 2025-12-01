@@ -84,7 +84,7 @@ export default function LoginPage() {
                 <CardHeader>
                     <CardTitle className="text-2xl font-bold text-center">Welcome Back</CardTitle>
                     <CardDescription className="text-center">
-                        Sign in to your SV Traders account
+                        Sign in to your SV Enterprises account
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

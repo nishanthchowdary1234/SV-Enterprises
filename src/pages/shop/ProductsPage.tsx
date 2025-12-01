@@ -12,7 +12,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
-import { Loader2, Search } from 'lucide-react';
+import { Loader2, Search, Minus, Plus } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
 import { useToast } from '@/hooks/use-toast';
 
@@ -27,7 +27,7 @@ export default function ProductsPage() {
     const [search, setSearch] = useState(searchParams.get('q') || '');
     const [priceRange, setPriceRange] = useState([0, 1000]);
     const [sort, setSort] = useState('newest');
-    const { addItem } = useCartStore();
+    const { addItem, items, updateQuantity } = useCartStore();
     const { toast } = useToast();
 
     useEffect(() => {
@@ -203,15 +203,42 @@ export default function ProductsPage() {
                                         </Link>
                                         <div className="flex items-center justify-between mt-4">
                                             <span className="text-lg font-bold">₹{product.price}</span>
-                                            <Button
-                                                size="sm"
-                                                onClick={() => {
-                                                    addItem(product);
-                                                    toast({ title: "Added to cart", description: `${product.title} added to your cart.` });
-                                                }}
-                                            >
-                                                Add to Cart
-                                            </Button>
+                                            {(() => {
+                                                const cartItem = items.find(item => item.id === product.id);
+                                                return cartItem ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="icon"
+                                                            className="h-8 w-8"
+                                                            onClick={() => updateQuantity(product.id, cartItem.quantity - 1)}
+                                                        >
+                                                            <Minus className="h-3 w-3" />
+                                                        </Button>
+                                                        <span className="w-4 text-center text-sm font-medium">
+                                                            {cartItem.quantity}
+                                                        </span>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="icon"
+                                                            className="h-8 w-8"
+                                                            onClick={() => updateQuantity(product.id, cartItem.quantity + 1)}
+                                                        >
+                                                            <Plus className="h-3 w-3" />
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            addItem(product);
+                                                            toast({ title: "Added to cart", description: `${product.title} added to your cart.` });
+                                                        }}
+                                                    >
+                                                        Add to Cart
+                                                    </Button>
+                                                );
+                                            })()}
                                         </div>
                                     </div>
                                 </div>
