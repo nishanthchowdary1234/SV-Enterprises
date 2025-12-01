@@ -26,12 +26,23 @@ import OrdersPage from '@/pages/shop/OrdersPage';
 import ProfilePage from '@/pages/shop/ProfilePage';
 import CounterSalesPage from '@/pages/admin/sales/CounterSalesPage';
 
+import { useCartStore } from '@/store/useCartStore';
+
 function App() {
-  const { initialize } = useAuthStore();
+  const { initialize, user } = useAuthStore();
+  const { fetchCart, clearCart } = useCartStore();
 
   useEffect(() => {
     initialize();
   }, [initialize]);
+
+  useEffect(() => {
+    if (user) {
+      fetchCart();
+    } else {
+      clearCart();
+    }
+  }, [user, fetchCart, clearCart]);
 
   return (
     <Router>
