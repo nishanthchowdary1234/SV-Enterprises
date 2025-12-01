@@ -51,7 +51,38 @@ export const useCartStore = create<CartState>()(
 
                 if (!cart) return;
 
-                // 2. Fetch Items
+                // 2. Merge Local Items to DB
+                const localItems = get().items;
+                if (localItems.length > 0) {
+                    for (const item of localItems) {
+                        // Check if item exists in DB cart
+                        const { data: existingDbItem } = await supabase
+                            .from('cart_items')
+                            .select('id, quantity')
+                            .eq('cart_id', cart.id)
+                            .eq('product_id', item.id)
+                            .single();
+
+                        if (existingDbItem) {
+                            // Update quantity (strategy: add local quantity to DB quantity)
+                            await supabase
+                                .from('cart_items')
+                                .update({ quantity: existingDbItem.quantity + item.quantity })
+                                .eq('id', existingDbItem.id);
+                        } else {
+                            // Insert new item
+                            await supabase
+                                .from('cart_items')
+                                .insert({
+                                    cart_id: cart.id,
+                                    product_id: item.id,
+                                    quantity: item.quantity
+                                });
+                        }
+                    }
+                }
+
+                // 3. Fetch Final Items from DB
                 const { data: items, error: itemsError } = await supabase
                     .from('cart_items')
                     .select('*, products(*)')
