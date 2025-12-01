@@ -43,6 +43,7 @@ export default function SignupPage() {
             email: values.email,
             password: values.password,
             options: {
+                emailRedirectTo: 'https://sv-enterprises.netlify.app/login',
                 data: {
                     full_name: values.fullName,
                 },
