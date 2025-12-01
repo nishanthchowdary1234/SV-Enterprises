@@ -12,7 +12,9 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, ArrowLeft, Package, MapPin } from 'lucide-react';
 
-type Order = Database['public']['Tables']['orders']['Row'];
+type Order = Database['public']['Tables']['orders']['Row'] & {
+    shipping_address: any;
+};
 type OrderItem = Database['public']['Tables']['order_items']['Row'] & {
     product: Database['public']['Tables']['products']['Row'] | null;
 };

@@ -142,7 +142,7 @@ export default function HomePage() {
                         <p className="text-muted-foreground col-span-3 text-center">No categories found.</p>
                     ) : (
                         categories.map((category) => (
-                            <Link key={category.id} to={`/products?category=${category.name}`} className="group relative overflow-hidden rounded-lg aspect-video bg-gray-100 dark:bg-gray-800 hover:opacity-90 transition-opacity">
+                            <Link key={category.id} to={`/products?category=${encodeURIComponent(category.name)}`} className="group relative overflow-hidden rounded-lg aspect-video bg-gray-100 dark:bg-gray-800 hover:opacity-90 transition-opacity">
                                 {category.image_url ? (
                                     <img src={category.image_url} alt={category.name} className="w-full h-full object-cover" />
                                 ) : (

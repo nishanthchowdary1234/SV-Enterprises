@@ -19,8 +19,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, CreditCard, Wallet, Banknote, MapPin } from 'lucide-react';
-
+import { Loader2, MapPin, Banknote } from 'lucide-react';
 const formSchema = z.object({
     fullName: z.string().min(2, "Full name is required"),
     address: z.string().min(5, "Address is required"),
