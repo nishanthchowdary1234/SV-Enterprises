@@ -19,7 +19,8 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Eye, Trash2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, Eye, Trash2, Search } from 'lucide-react';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -40,7 +41,16 @@ export default function AdminOrdersPage() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [searchQuery, setSearchQuery] = useState('');
     const { toast } = useToast();
+
+    const filteredOrders = orders.filter(order => {
+        const searchLower = searchQuery.toLowerCase();
+        return (
+            order.id.toLowerCase().includes(searchLower) ||
+            order.user?.email?.toLowerCase().includes(searchLower)
+        );
+    });
 
     useEffect(() => {
         fetchOrders();
@@ -181,6 +191,15 @@ export default function AdminOrdersPage() {
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
                 <div className="flex items-center gap-4">
+                    <div className="relative w-72">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Search orders..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-8"
+                        />
+                    </div>
                     <Button
                         variant="destructive"
                         onClick={deleteAllOrders}
@@ -210,6 +229,7 @@ export default function AdminOrdersPage() {
                     <TableHeader>
                         <TableRow>
                             <TableHead>Order ID</TableHead>
+                            <TableHead>Customer</TableHead>
                             <TableHead>Date</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="text-right">Total</TableHead>
@@ -219,21 +239,27 @@ export default function AdminOrdersPage() {
                     <TableBody>
                         {loading ? (
                             <TableRow>
-                                <TableCell colSpan={5} className="h-24 text-center">
+                                <TableCell colSpan={6} className="h-24 text-center">
                                     <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                                 </TableCell>
                             </TableRow>
-                        ) : orders.length === 0 ? (
+                        ) : filteredOrders.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={5} className="h-24 text-center">
+                                <TableCell colSpan={6} className="h-24 text-center">
                                     No orders found.
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            orders.map((order) => (
+                            filteredOrders.map((order) => (
                                 <TableRow key={order.id}>
                                     <TableCell className="font-medium">
                                         #{order.id.slice(0, 8)}
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-medium">{order.user?.email || 'Guest'}</span>
+                                            <span className="text-xs text-muted-foreground">{order.id}</span>
+                                        </div>
                                     </TableCell>
                                     <TableCell>
                                         {new Date(order.created_at).toLocaleDateString()}
