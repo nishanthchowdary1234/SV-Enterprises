@@ -34,12 +34,14 @@ export function ProductImportDialog({ onSuccess }: ProductImportDialogProps) {
     const [loading, setLoading] = useState(false);
     const [file, setFile] = useState<File | null>(null);
     const [stats, setStats] = useState<{ total: number; success: number; failed: number } | null>(null);
+    const [errors, setErrors] = useState<string[]>([]);
     const { toast } = useToast();
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             setFile(e.target.files[0]);
             setStats(null);
+            setErrors([]);
         }
     };
 
@@ -48,6 +50,7 @@ export function ProductImportDialog({ onSuccess }: ProductImportDialogProps) {
 
         setLoading(true);
         setStats(null);
+        setErrors([]);
 
         try {
             // 1. Fetch all categories for lookup
@@ -55,8 +58,9 @@ export function ProductImportDialog({ onSuccess }: ProductImportDialogProps) {
                 .from('categories')
                 .select('id, name');
 
-            if (catError) throw catError;
+            if (catError) throw new Error(`Failed to fetch categories: ${catError.message}`);
 
+            // Map: lowercase name -> id
             const categoryMap = new Map(categories?.map(c => [c.name.toLowerCase(), c.id]));
 
             // 2. Parse CSV
@@ -66,19 +70,35 @@ export function ProductImportDialog({ onSuccess }: ProductImportDialogProps) {
                 complete: async (results) => {
                     let successCount = 0;
                     let failCount = 0;
+                    const newErrors: string[] = [];
                     const rows = results.data;
 
-                    for (const row of rows) {
+                    for (const [index, row] of rows.entries()) {
                         try {
                             // Validate required fields
                             if (!row.title || !row.price || !row.category) {
-                                throw new Error(`Missing required fields for product: ${row.title || 'Unknown'}`);
+                                throw new Error(`Row ${index + 1}: Missing required fields (title, price, or category)`);
                             }
 
-                            // Find category ID
-                            const categoryId = categoryMap.get(row.category.trim().toLowerCase());
+                            const categoryName = row.category.trim();
+                            const categoryKey = categoryName.toLowerCase();
+                            let categoryId = categoryMap.get(categoryKey);
+
+                            // Create category if it doesn't exist
                             if (!categoryId) {
-                                throw new Error(`Category not found: ${row.category}`);
+                                const { data: newCategory, error: createCatError } = await supabase
+                                    .from('categories')
+                                    .insert({
+                                        name: categoryName,
+                                        slug: categoryName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '-' + Math.random().toString(36).substring(7)
+                                    })
+                                    .select('id')
+                                    .single();
+
+                                if (createCatError) throw new Error(`Row ${index + 1}: Failed to create category '${categoryName}': ${createCatError.message}`);
+
+                                categoryId = newCategory.id;
+                                categoryMap.set(categoryKey, categoryId); // Update map for subsequent rows
                             }
 
                             // Insert product
@@ -93,11 +113,12 @@ export function ProductImportDialog({ onSuccess }: ProductImportDialogProps) {
                                 slug: row.title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '-' + Math.random().toString(36).substring(7)
                             });
 
-                            if (error) throw error;
+                            if (error) throw new Error(`Row ${index + 1}: Failed to insert product '${row.title}': ${error.message}`);
                             successCount++;
-                        } catch (err) {
+                        } catch (err: any) {
                             console.error('Error importing row:', row, err);
                             failCount++;
+                            newErrors.push(err.message || `Row ${index + 1}: Unknown error`);
                         }
                     }
 
@@ -106,6 +127,7 @@ export function ProductImportDialog({ onSuccess }: ProductImportDialogProps) {
                         success: successCount,
                         failed: failCount
                     });
+                    setErrors(newErrors);
                     setLoading(false);
 
                     if (successCount > 0) {
@@ -118,7 +140,7 @@ export function ProductImportDialog({ onSuccess }: ProductImportDialogProps) {
                         toast({
                             variant: "destructive",
                             title: "Import Failed",
-                            description: "No products were imported. Check your CSV format.",
+                            description: "No products were imported. Check the error list below.",
                         });
                     }
                 },
@@ -164,7 +186,7 @@ export function ProductImportDialog({ onSuccess }: ProductImportDialogProps) {
                     Import CSV
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Import Products</DialogTitle>
                     <DialogDescription>
@@ -199,6 +221,17 @@ export function ProductImportDialog({ onSuccess }: ProductImportDialogProps) {
                                     {stats.failed} failed
                                 </div>
                             )}
+                        </div>
+                    )}
+
+                    {errors.length > 0 && (
+                        <div className="rounded-md bg-red-50 p-4 space-y-2 max-h-40 overflow-y-auto text-xs text-red-600 border border-red-200">
+                            <p className="font-semibold">Errors:</p>
+                            <ul className="list-disc pl-4 space-y-1">
+                                {errors.map((err, i) => (
+                                    <li key={i}>{err}</li>
+                                ))}
+                            </ul>
                         </div>
                     )}
                 </div>
