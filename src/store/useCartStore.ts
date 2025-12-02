@@ -26,82 +26,102 @@ export const useCartStore = create<CartState>()(
             items: [],
             fetchCart: async () => {
                 const user = useAuthStore.getState().user;
-                if (!user) return;
-
-                // 1. Get or Create Cart
-                let { data: cart } = await supabase
-                    .from('carts')
-                    .select('id')
-                    .eq('user_id', user.id)
-                    .single();
-
-                if (!cart) {
-                    const { data: newCart, error } = await supabase
-                        .from('carts')
-                        .insert({ user_id: user.id })
-                        .select()
-                        .single();
-
-                    if (error || !newCart) {
-                        console.error('Error creating cart:', error);
-                        return;
-                    }
-                    cart = newCart;
-                }
-
-                if (!cart) return;
-
-                // 2. Merge Local Items to DB
-                const localItems = get().items;
-                if (localItems.length > 0) {
-                    for (const item of localItems) {
-                        // Check if item exists in DB cart
-                        const { data: existingDbItem } = await supabase
-                            .from('cart_items')
-                            .select('id, quantity')
-                            .eq('cart_id', cart.id)
-                            .eq('product_id', item.id)
-                            .single();
-
-                        if (existingDbItem) {
-                            // Update quantity (strategy: add local quantity to DB quantity)
-                            await supabase
-                                .from('cart_items')
-                                .update({ quantity: existingDbItem.quantity + item.quantity })
-                                .eq('id', existingDbItem.id);
-                        } else {
-                            // Insert new item
-                            await supabase
-                                .from('cart_items')
-                                .insert({
-                                    cart_id: cart.id,
-                                    product_id: item.id,
-                                    quantity: item.quantity
-                                });
-                        }
-                    }
-                }
-
-                // 3. Fetch Final Items from DB
-                const { data: items, error: itemsError } = await supabase
-                    .from('cart_items')
-                    .select('*, products(*)')
-                    .eq('cart_id', cart.id);
-
-                if (itemsError) {
-                    console.error('Error fetching cart items:', itemsError);
+                if (!user) {
+                    console.log('fetchCart: No user logged in');
                     return;
                 }
+                console.log('fetchCart: Starting for user', user.id);
 
-                if (items) {
-                    const cartItems: CartItem[] = items.map((item: any) => ({
-                        ...item.products,
-                        quantity: item.quantity,
-                    }));
-                    set({ items: cartItems });
+                try {
+                    // 1. Get or Create Cart
+                    let { data: cart, error: cartError } = await supabase
+                        .from('carts')
+                        .select('id')
+                        .eq('user_id', user.id)
+                        .maybeSingle();
+
+                    if (cartError) {
+                        console.error('fetchCart: Error fetching cart:', cartError);
+                        return;
+                    }
+
+                    if (!cart) {
+                        console.log('fetchCart: Creating new cart');
+                        const { data: newCart, error } = await supabase
+                            .from('carts')
+                            .insert({ user_id: user.id })
+                            .select()
+                            .single();
+
+                        if (error || !newCart) {
+                            console.error('fetchCart: Error creating cart:', error);
+                            return;
+                        }
+                        cart = newCart;
+                    }
+
+                    if (!cart) return;
+                    console.log('fetchCart: Cart ID', cart.id);
+
+                    // 2. Merge Local Items to DB
+                    const localItems = get().items;
+                    console.log('fetchCart: Local items to merge', localItems.length);
+
+                    if (localItems.length > 0) {
+                        for (const item of localItems) {
+                            // Check if item exists in DB cart
+                            const { data: existingDbItem } = await supabase
+                                .from('cart_items')
+                                .select('id, quantity')
+                                .eq('cart_id', cart.id)
+                                .eq('product_id', item.id)
+                                .maybeSingle();
+
+                            if (existingDbItem) {
+                                console.log('fetchCart: Updating existing item', item.id);
+                                await supabase
+                                    .from('cart_items')
+                                    .update({ quantity: existingDbItem.quantity + item.quantity })
+                                    .eq('id', existingDbItem.id);
+                            } else {
+                                console.log('fetchCart: Inserting new item', item.id);
+                                await supabase
+                                    .from('cart_items')
+                                    .insert({
+                                        cart_id: cart.id,
+                                        product_id: item.id,
+                                        quantity: item.quantity
+                                    });
+                            }
+                        }
+                    }
+
+                    // 3. Fetch Final Items from DB
+                    const { data: items, error: itemsError } = await supabase
+                        .from('cart_items')
+                        .select('*, products(*)')
+                        .eq('cart_id', cart.id);
+
+                    if (itemsError) {
+                        console.error('fetchCart: Error fetching final items:', itemsError);
+                        return;
+                    }
+
+                    console.log('fetchCart: Final items fetched', items?.length);
+
+                    if (items) {
+                        const cartItems: CartItem[] = items.map((item: any) => ({
+                            ...item.products,
+                            quantity: item.quantity,
+                        }));
+                        set({ items: cartItems });
+                    }
+                } catch (error) {
+                    console.error('fetchCart: Unexpected error:', error);
                 }
             },
             addItem: async (product) => {
+                console.log('addItem: Adding product', product.id);
                 const items = get().items;
                 const existingItem = items.find((item) => item.id === product.id);
                 const user = useAuthStore.getState().user;
@@ -126,7 +146,7 @@ export const useCartStore = create<CartState>()(
                             .from('carts')
                             .select('id')
                             .eq('user_id', user.id)
-                            .single();
+                            .maybeSingle();
 
                         if (cart) {
                             if (existingItem) {
@@ -147,7 +167,6 @@ export const useCartStore = create<CartState>()(
                         }
                     } catch (error) {
                         console.error('Error syncing cart item:', error);
-                        // Revert on error? For now, we'll just log it.
                     }
                 }
             },
@@ -160,7 +179,7 @@ export const useCartStore = create<CartState>()(
                         .from('carts')
                         .select('id')
                         .eq('user_id', user.id)
-                        .single();
+                        .maybeSingle();
 
                     if (cart) {
                         await supabase
@@ -189,7 +208,7 @@ export const useCartStore = create<CartState>()(
                         .from('carts')
                         .select('id')
                         .eq('user_id', user.id)
-                        .single();
+                        .maybeSingle();
 
                     if (cart) {
                         await supabase
@@ -209,7 +228,7 @@ export const useCartStore = create<CartState>()(
                         .from('carts')
                         .select('id')
                         .eq('user_id', user.id)
-                        .single();
+                        .maybeSingle();
 
                     if (cart) {
                         await supabase

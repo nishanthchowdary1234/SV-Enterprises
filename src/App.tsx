@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import { useAuthStore } from '@/store/useAuthStore';
+import { supabase } from '@/lib/supabase';
 import RootLayout from '@/layouts/RootLayout';
 import LoginPage from '@/pages/auth/LoginPage';
 import SignupPage from '@/pages/auth/SignupPage';
@@ -39,10 +40,17 @@ function App() {
   useEffect(() => {
     if (user) {
       fetchCart();
-    } else {
-      clearCart();
     }
-  }, [user, fetchCart, clearCart]);
+  }, [user, fetchCart]);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        clearCart();
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [clearCart]);
 
   return (
     <Router>
