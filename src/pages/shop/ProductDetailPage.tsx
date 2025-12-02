@@ -11,10 +11,16 @@ type Product = Database['public']['Tables']['products']['Row'] & {
     category: { name: string } | null;
 };
 
+import { ProductReviews } from '@/components/shop/ProductReviews';
+
+// ... (previous imports)
+
 export default function ProductDetailPage() {
     const { slug } = useParams();
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
+    const [averageRating, setAverageRating] = useState(0);
+    const [reviewCount, setReviewCount] = useState(0);
     const { toast } = useToast();
     const { addItem, items, updateQuantity, removeItem } = useCartStore();
 
@@ -43,6 +49,16 @@ export default function ProductDetailPage() {
         setLoading(false);
     }
 
+    const handleReviewsUpdated = (reviews: any[]) => {
+        setReviewCount(reviews.length);
+        if (reviews.length > 0) {
+            const total = reviews.reduce((sum, review) => sum + review.rating, 0);
+            setAverageRating(total / reviews.length);
+        } else {
+            setAverageRating(0);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex h-screen items-center justify-center">
@@ -70,7 +86,7 @@ export default function ProductDetailPage() {
                 </Link>
             </Button>
 
-            <div className="grid md:grid-cols-2 gap-8 lg:gap-16">
+            <div className="grid md:grid-cols-2 gap-8 lg:gap-16 mb-16">
                 {/* Media Section */}
                 <div className="space-y-4">
                     <div className="aspect-square rounded-lg border bg-gray-50 dark:bg-gray-900 overflow-hidden relative">
@@ -95,13 +111,16 @@ export default function ProductDetailPage() {
 
                     <div className="flex items-center gap-4 mb-6">
                         <div className="flex items-center text-yellow-400">
-                            <Star className="fill-current h-5 w-5" />
-                            <Star className="fill-current h-5 w-5" />
-                            <Star className="fill-current h-5 w-5" />
-                            <Star className="fill-current h-5 w-5" />
-                            <Star className="h-5 w-5" />
+                            {Array.from({ length: 5 }).map((_, i) => (
+                                <Star
+                                    key={i}
+                                    className={`h-5 w-5 ${i < Math.round(averageRating) ? 'fill-current' : 'text-gray-300'}`}
+                                />
+                            ))}
                         </div>
-                        <span className="text-sm text-gray-500">(24 reviews)</span>
+                        <span className="text-sm text-gray-500">
+                            ({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})
+                        </span>
                     </div>
 
                     <div className="text-3xl font-bold mb-8">
@@ -169,6 +188,11 @@ export default function ProductDetailPage() {
                         </p>
                     </div>
                 </div>
+            </div>
+
+            {/* Reviews Section */}
+            <div className="border-t pt-16">
+                <ProductReviews productId={product.id} onReviewsUpdated={handleReviewsUpdated} />
             </div>
         </div>
     );
