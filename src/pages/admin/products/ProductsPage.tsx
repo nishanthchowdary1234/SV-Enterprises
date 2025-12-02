@@ -11,6 +11,13 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Database } from '@/types/supabase';
 
@@ -18,18 +25,39 @@ type Product = Database['public']['Tables']['products']['Row'] & {
     category: { name: string } | null;
 };
 
+type Category = {
+    id: string;
+    name: string;
+};
+
+import { ProductImportDialog } from '@/components/admin/ProductImportDialog';
+
 export default function ProductsPage() {
     const [products, setProducts] = useState<Product[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [loading, setLoading] = useState(true);
     const { toast } = useToast();
 
     useEffect(() => {
+        fetchCategories();
         fetchProducts();
-    }, []);
+    }, [selectedCategory]);
+
+    async function fetchCategories() {
+        const { data } = await supabase
+            .from('categories')
+            .select('id, name')
+            .order('name');
+
+        if (data) {
+            setCategories(data);
+        }
+    }
 
     async function fetchProducts(retryCount = 0) {
         setLoading(true);
-        console.log(`Fetching products... (Attempt ${retryCount + 1})`);
+        // console.log(`Fetching products... (Attempt ${retryCount + 1})`);
 
         try {
             // 15 second timeout for retry
@@ -37,14 +65,18 @@ export default function ProductsPage() {
                 setTimeout(() => reject(new Error('Timeout')), 15000)
             );
 
-            const queryPromise = supabase
+            let query = supabase
                 .from('products')
                 .select('*, category:categories(name)')
-                .order('created_at', { ascending: false });
+                .order('title', { ascending: true }); // Sort by name (A-Z)
 
-            const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+            if (selectedCategory && selectedCategory !== 'all') {
+                query = query.eq('category_id', selectedCategory);
+            }
 
-            console.log('Products fetch result:', { data, error });
+            const { data, error } = await Promise.race([query, timeoutPromise]) as any;
+
+            // console.log('Products fetch result:', { data, error });
 
             if (error) {
                 console.error('Error fetching products:', error);
@@ -105,6 +137,20 @@ export default function ProductsPage() {
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold tracking-tight">Products</h1>
                 <div className="flex gap-2">
+                    <ProductImportDialog onSuccess={fetchProducts} />
+                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                        <SelectTrigger className="w-[200px]">
+                            <SelectValue placeholder="Filter by Category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Categories</SelectItem>
+                            {categories.map((category) => (
+                                <SelectItem key={category.id} value={category.id}>
+                                    {category.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                     <Button variant="outline" asChild>
                         <Link to="/admin/categories/new">
                             <Plus className="mr-2 h-4 w-4" />
