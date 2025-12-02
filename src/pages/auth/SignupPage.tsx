@@ -68,7 +68,7 @@ export default function SignupPage() {
         setLoading(false);
         toast({
             title: "Success",
-            description: "Account created successfully! Please check your email to verify.",
+            description: "Account created successfully! You can now log in.",
         });
         navigate('/login');
     }
