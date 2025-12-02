@@ -72,13 +72,27 @@ export function ProductImportDialog({ onSuccess }: ProductImportDialogProps) {
             });
 
             // 3. Parse CSV
-            // Remove BOM if present
-            const cleanText = text.replace(/^\uFEFF/, '');
+            // Pre-process text to handle "quoted lines" format (e.g. "col1,col2,col3")
+            const cleanText = text.split(/\r?\n/).map(line => {
+                const trimmed = line.trim();
+                // Heuristic: If line starts/ends with quotes but doesn't look like standard quoted fields (",")
+                if (trimmed.length > 2 && trimmed.startsWith('"') && trimmed.endsWith('"') && !trimmed.includes('","')) {
+                    return trimmed.slice(1, -1);
+                }
+                return line;
+            }).join('\n');
 
-            Papa.parse<CSVRow>(cleanText, {
+            // Remove BOM if present
+            const finalText = cleanText.replace(/^\uFEFF/, '');
+
+            Papa.parse<CSVRow>(finalText, {
                 header: true,
                 skipEmptyLines: true,
                 transformHeader: (header) => header.trim().toLowerCase().replace(/^["']|["']$/g, '').trim(),
+                transform: (value) => {
+                    // Handle escaped quotes that might remain after stripping outer quotes
+                    return value.replace(/""/g, '"');
+                },
                 complete: async (results) => {
                     let successCount = 0;
                     let failCount = 0;
