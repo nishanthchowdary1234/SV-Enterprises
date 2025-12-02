@@ -92,9 +92,55 @@ export default function OrdersPage() {
                                         ₹{order.total_amount.toFixed(2)}
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <Button variant="ghost" size="sm" asChild>
-                                            <Link to={`/orders/${order.id}`}>View Details</Link>
-                                        </Button>
+                                        <div className="flex justify-end gap-2">
+                                            <Button variant="ghost" size="sm" asChild>
+                                                <Link to={`/orders/${order.id}`}>View</Link>
+                                            </Button>
+
+                                            {(order.status === 'pending' || order.status === 'paid') && (
+                                                <Button
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    onClick={async () => {
+                                                        if (!confirm('Are you sure you want to cancel this order?')) return;
+                                                        const { error } = await supabase
+                                                            .from('orders')
+                                                            .update({ status: 'cancelled' })
+                                                            .eq('id', order.id);
+                                                        if (error) {
+                                                            console.error(error);
+                                                            alert('Failed to cancel order');
+                                                        } else {
+                                                            fetchOrders();
+                                                        }
+                                                    }}
+                                                >
+                                                    Cancel
+                                                </Button>
+                                            )}
+
+                                            {order.status === 'delivered' && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={async () => {
+                                                        if (!confirm('Are you sure you want to return this order?')) return;
+                                                        const { error } = await supabase
+                                                            .from('orders')
+                                                            .update({ status: 'returned' }) // Assuming 'returned' is a valid status or we need a return request flow
+                                                            .eq('id', order.id);
+                                                        if (error) {
+                                                            console.error(error);
+                                                            alert('Failed to process return');
+                                                        } else {
+                                                            fetchOrders();
+                                                        }
+                                                    }}
+                                                >
+                                                    Return
+                                                </Button>
+                                            )}
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))

@@ -129,7 +129,8 @@ export default function AdminOrderDetailPage() {
                     <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium capitalize
             ${order.status === 'delivered' ? 'bg-green-100 text-green-800' :
                             order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                'bg-yellow-100 text-yellow-800'}`}>
+                                order.status === 'returned' ? 'bg-orange-100 text-orange-800' :
+                                    'bg-yellow-100 text-yellow-800'}`}>
                         {order.status}
                     </span>
                 </div>

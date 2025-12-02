@@ -14,7 +14,11 @@ import {
     SheetFooter,
 } from '@/components/ui/sheet';
 
-export default function CartSheet() {
+interface CartSheetProps {
+    trigger?: React.ReactNode;
+}
+
+export default function CartSheet({ trigger }: CartSheetProps) {
     const { items, removeItem, updateQuantity, total } = useCartStore();
     const [open, setOpen] = useState(false);
     const itemCount = items.reduce((acc, item) => acc + item.quantity, 0);
@@ -22,15 +26,17 @@ export default function CartSheet() {
     return (
         <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative">
-                    <ShoppingBag className="h-5 w-5" />
-                    <span className="sr-only">Cart</span>
-                    {itemCount > 0 && (
-                        <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] font-medium text-primary-foreground flex items-center justify-center">
-                            {itemCount}
-                        </span>
-                    )}
-                </Button>
+                {trigger || (
+                    <Button variant="ghost" size="icon" className="relative">
+                        <ShoppingBag className="h-5 w-5" />
+                        <span className="sr-only">Cart</span>
+                        {itemCount > 0 && (
+                            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] font-medium text-primary-foreground flex items-center justify-center">
+                                {itemCount}
+                            </span>
+                        )}
+                    </Button>
+                )}
             </SheetTrigger>
             <SheetContent className="flex w-full flex-col pr-0 sm:max-w-lg">
                 <SheetHeader className="px-1">

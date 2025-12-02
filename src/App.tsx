@@ -26,6 +26,8 @@ import OrderDetailPage from '@/pages/shop/OrderDetailPage';
 import OrdersPage from '@/pages/shop/OrdersPage';
 import ProfilePage from '@/pages/shop/ProfilePage';
 import CounterSalesPage from '@/pages/admin/sales/CounterSalesPage';
+import CustomerServicePage from '@/pages/CustomerServicePage';
+import CustomerServiceAdminPage from '@/pages/admin/CustomerServiceAdminPage';
 
 import { useCartStore } from '@/store/useCartStore';
 
@@ -65,6 +67,7 @@ function App() {
           <Route path="/orders/:id" element={<OrderDetailPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/customer-service" element={<CustomerServicePage />} />
 
           <Route element={<ProtectedRoute />}>
             <Route path="/profile" element={<ProfilePage />} />
@@ -84,6 +87,8 @@ function App() {
           <Route path="orders/:id" element={<AdminOrderDetailPage />} />
           <Route path="customers" element={<CustomersPage />} />
           <Route path="counter-sales" element={<CounterSalesPage />} />
+          <Route path="counter-sales" element={<CounterSalesPage />} />
+          <Route path="customer-service" element={<CustomerServiceAdminPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Routes>

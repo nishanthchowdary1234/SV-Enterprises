@@ -253,7 +253,7 @@ export interface Database {
         Row: {
           id: string
           user_id: string | null
-          status: "pending" | "paid" | "shipped" | "delivered" | "cancelled"
+          status: "pending" | "paid" | "shipped" | "delivered" | "cancelled" | "returned"
           total_amount: number
           shipping_address_id: string | null
           created_at: string
@@ -261,7 +261,7 @@ export interface Database {
         Insert: {
           id?: string
           user_id?: string | null
-          status?: "pending" | "paid" | "shipped" | "delivered" | "cancelled"
+          status?: "pending" | "paid" | "shipped" | "delivered" | "cancelled" | "returned"
           total_amount: number
           shipping_address_id?: string | null
           created_at?: string
@@ -269,7 +269,7 @@ export interface Database {
         Update: {
           id?: string
           user_id?: string | null
-          status?: "pending" | "paid" | "shipped" | "delivered" | "cancelled"
+          status?: "pending" | "paid" | "shipped" | "delivered" | "cancelled" | "returned"
           total_amount?: number
           shipping_address_id?: string | null
           created_at?: string

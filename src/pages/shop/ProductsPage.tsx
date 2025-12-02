@@ -31,6 +31,11 @@ export default function ProductsPage() {
     const { toast } = useToast();
 
     useEffect(() => {
+        const sortParam = searchParams.get('sort');
+        if (sortParam) setSort(sortParam);
+    }, [searchParams]);
+
+    useEffect(() => {
         fetchProducts();
 
         const channel = supabase
@@ -47,7 +52,7 @@ export default function ProductsPage() {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [searchParams]);
+    }, [searchParams, sort]);
 
     async function fetchProducts(isBackground = false) {
         if (!isBackground) setLoading(true);
@@ -66,8 +71,23 @@ export default function ProductsPage() {
 
                 let query = supabase
                     .from('products')
-                    .select(`*, category:categories${category ? '!inner' : ''}(name)`)
-                    .order('created_at', { ascending: false });
+                    .select(`*, category:categories${category ? '!inner' : ''}(name)`);
+
+                // Apply Sorting
+                if (sort === 'newest') {
+                    query = query.order('created_at', { ascending: false });
+                } else if (sort === 'price-asc') {
+                    query = query.order('price', { ascending: true });
+                } else if (sort === 'price-desc') {
+                    query = query.order('price', { ascending: false });
+                } else if (sort === 'deals') {
+                    // For deals, we want items with compare_at_price > price.
+                    // Since we can't easily compare columns in simple query, we'll fetch items with compare_at_price not null
+                    // and filter in memory. We'll order by discount magnitude ideally, but for now just created_at
+                    query = query.not('compare_at_price', 'is', null).order('created_at', { ascending: false });
+                } else {
+                    query = query.order('created_at', { ascending: false });
+                }
 
                 const searchQuery = searchParams.get('q');
                 if (searchQuery) {
@@ -85,8 +105,17 @@ export default function ProductsPage() {
 
                 if (error) throw error;
 
+                let fetchedProducts = data || [];
+
+                // In-memory filtering for Deals
+                if (sort === 'deals') {
+                    fetchedProducts = fetchedProducts.filter((p: Product) =>
+                        p.compare_at_price && p.compare_at_price > p.price
+                    );
+                }
+
                 // @ts-ignore
-                setProducts(data || []);
+                setProducts(fetchedProducts);
                 break; // Success, exit loop
             } catch (error) {
                 console.error(`Attempt ${attempts} failed:`, error);

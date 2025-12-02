@@ -2,9 +2,15 @@ import { create } from 'zustand';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 
+interface Profile {
+    full_name: string | null;
+    role: string;
+}
+
 interface AuthState {
     user: User | null;
     session: Session | null;
+    profile: Profile | null;
     isAdmin: boolean;
     loading: boolean;
     setUser: (user: User | null) => void;
@@ -16,13 +22,14 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set, get) => ({
     user: null,
     session: null,
+    profile: null,
     isAdmin: false,
     loading: true,
     setUser: (user) => set({ user }),
     setSession: (session) => set({ session }),
     signOut: async () => {
         await supabase.auth.signOut();
-        set({ user: null, session: null, isAdmin: false });
+        set({ user: null, session: null, profile: null, isAdmin: false });
     },
     initialize: async () => {
         set({ loading: true });
@@ -30,45 +37,49 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         // Get initial session
         const { data: { session } } = await supabase.auth.getSession();
 
+        let profile: Profile | null = null;
         let isAdmin = false;
+
         if (session?.user) {
-            const { data: profile } = await supabase
+            const { data } = await supabase
                 .from('profiles')
-                .select('role')
+                .select('full_name, role')
                 .eq('id', session.user.id)
                 .single();
-            isAdmin = profile?.role === 'admin';
+
+            if (data) {
+                profile = data;
+                isAdmin = data.role === 'admin';
+            }
         }
 
-        set({ session, user: session?.user ?? null, isAdmin, loading: false });
+        set({ session, user: session?.user ?? null, profile, isAdmin, loading: false });
 
         // Listen for changes
         supabase.auth.onAuthStateChange(async (_event, session) => {
-            // console.log('Auth event:', _event, session?.user?.id);
-
             const currentUser = get().user;
-            const currentIsAdmin = get().isAdmin;
 
-            // If user hasn't changed, we don't need to re-fetch admin status
-            // unless it's an initial session check or explicit sign in
-            if (session?.user?.id === currentUser?.id && currentIsAdmin !== undefined) {
-                // Ensure session is not null before accessing user, though the check above implies it
+            if (session?.user?.id === currentUser?.id && get().profile) {
                 set({ session, user: session?.user ?? null, loading: false });
                 return;
             }
 
+            let profile: Profile | null = null;
             let isAdmin = false;
+
             if (session?.user) {
-                // Try to get role from metadata first (if you add it there later)
-                // Otherwise fetch from profiles
-                const { data: profile } = await supabase
+                const { data } = await supabase
                     .from('profiles')
-                    .select('role')
+                    .select('full_name, role')
                     .eq('id', session.user.id)
                     .single();
-                isAdmin = profile?.role === 'admin';
+
+                if (data) {
+                    profile = data;
+                    isAdmin = data.role === 'admin';
+                }
             }
-            set({ session, user: session?.user ?? null, isAdmin, loading: false });
+            set({ session, user: session?.user ?? null, profile, isAdmin, loading: false });
         });
     },
 }));

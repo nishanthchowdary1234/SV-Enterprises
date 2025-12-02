@@ -255,6 +255,19 @@ export default function ProductFormPage() {
                         />
                         <FormField
                             control={form.control}
+                            name="compare_at_price"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Compare at Price (Original Price)</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" step="0.01" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
                             name="stock_quantity"
                             render={({ field }) => (
                                 <FormItem>
