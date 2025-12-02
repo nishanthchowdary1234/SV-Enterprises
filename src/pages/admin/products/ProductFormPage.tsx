@@ -28,6 +28,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from "@/lib/utils"
@@ -344,28 +345,67 @@ export default function ProductFormPage() {
                         )}
                     />
 
-                    <div className="space-y-2">
+                    <div className="space-y-4">
                         <FormLabel>Product Image</FormLabel>
-                        <div className="flex items-center gap-4">
-                            {form.watch('image_url') && (
-                                <img
-                                    src={form.watch('image_url')}
-                                    alt="Preview"
-                                    className="h-20 w-20 rounded-md object-cover"
-                                />
-                            )}
-                            <div className="flex-1">
-                                <Input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) => {
-                                        handleImageUpload(e);
-                                        e.target.value = ''; // Reset input
-                                    }}
-                                    disabled={uploading}
-                                />
-                            </div>
-                        </div>
+                        <Tabs defaultValue="upload" className="w-full">
+                            <TabsList className="grid w-full grid-cols-2">
+                                <TabsTrigger value="upload">Upload Image</TabsTrigger>
+                                <TabsTrigger value="url">Image URL</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="upload" className="space-y-4">
+                                <div className="flex items-center gap-4">
+                                    {form.watch('image_url') && (
+                                        <img
+                                            src={form.watch('image_url')}
+                                            alt="Preview"
+                                            className="h-20 w-20 rounded-md object-cover border"
+                                        />
+                                    )}
+                                    <div className="flex-1">
+                                        <Input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                handleImageUpload(e);
+                                                e.target.value = ''; // Reset input
+                                            }}
+                                            disabled={uploading}
+                                        />
+                                        <p className="text-xs text-muted-foreground mt-2">
+                                            Max size: 5MB. Supported formats: JPG, PNG, WebP.
+                                        </p>
+                                    </div>
+                                </div>
+                            </TabsContent>
+                            <TabsContent value="url" className="space-y-4">
+                                <div className="flex items-center gap-4">
+                                    {form.watch('image_url') && (
+                                        <img
+                                            src={form.watch('image_url')}
+                                            alt="Preview"
+                                            className="h-20 w-20 rounded-md object-cover border"
+                                        />
+                                    )}
+                                    <div className="flex-1">
+                                        <FormField
+                                            control={form.control}
+                                            name="image_url"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormControl>
+                                                        <Input placeholder="https://example.com/image.jpg" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <p className="text-xs text-muted-foreground mt-2">
+                                            Paste a direct link to an image.
+                                        </p>
+                                    </div>
+                                </div>
+                            </TabsContent>
+                        </Tabs>
                     </div>
 
                     <div className="flex justify-end gap-4">
