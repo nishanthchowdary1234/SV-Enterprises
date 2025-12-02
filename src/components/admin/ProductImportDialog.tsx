@@ -63,8 +63,28 @@ export function ProductImportDialog({ onSuccess }: ProductImportDialogProps) {
             // Map: lowercase name -> id
             const categoryMap = new Map(categories?.map(c => [c.name.toLowerCase(), c.id]));
 
-            // 2. Parse CSV
-            Papa.parse<CSVRow>(file, {
+            // 2. Read file as text to handle potential formatting issues (like entire rows being quoted)
+            const text = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target?.result as string);
+                reader.onerror = (e) => reject(e);
+                reader.readAsText(file);
+            });
+
+            // Clean up the text: remove leading/trailing quotes from lines if they exist
+            // This handles the case where the user's CSV has lines like "col1,col2,col3"
+            const cleanText = text.split('\n').map(line => {
+                line = line.trim();
+                if (line.startsWith('"') && line.endsWith('"') && line.includes(',')) {
+                    // Check if it's just one big quoted string that contains commas
+                    // We want to strip the outer quotes
+                    return line.slice(1, -1).replace(/""/g, '"'); // Handle escaped quotes
+                }
+                return line;
+            }).join('\n');
+
+            // 3. Parse CSV
+            Papa.parse<CSVRow>(cleanText, {
                 header: true,
                 skipEmptyLines: true,
                 complete: async (results) => {
@@ -72,6 +92,25 @@ export function ProductImportDialog({ onSuccess }: ProductImportDialogProps) {
                     let failCount = 0;
                     const newErrors: string[] = [];
                     const rows = results.data;
+
+                    if (rows.length === 0) {
+                        setErrors(["The CSV file appears to be empty or could not be parsed."]);
+                        setLoading(false);
+                        return;
+                    }
+
+                    // Check if headers were parsed correctly
+                    const firstRow = rows[0];
+                    if (!('title' in firstRow) || !('price' in firstRow)) {
+                        console.log('Parsed headers:', Object.keys(firstRow));
+                        setErrors([
+                            "Could not find 'title' or 'price' columns.",
+                            "Detected columns: " + Object.keys(firstRow).join(', '),
+                            "Please check the template and ensure your CSV headers match."
+                        ]);
+                        setLoading(false);
+                        return;
+                    }
 
                     for (const [index, row] of rows.entries()) {
                         try {
@@ -144,7 +183,7 @@ export function ProductImportDialog({ onSuccess }: ProductImportDialogProps) {
                         });
                     }
                 },
-                error: (error) => {
+                error: (error: any) => {
                     console.error('CSV Parse Error:', error);
                     toast({
                         variant: "destructive",
