@@ -71,22 +71,11 @@ export function ProductImportDialog({ onSuccess }: ProductImportDialogProps) {
                 reader.readAsText(file);
             });
 
-            // Clean up the text: remove leading/trailing quotes from lines if they exist
-            // This handles the case where the user's CSV has lines like "col1,col2,col3"
-            const cleanText = text.split('\n').map(line => {
-                line = line.trim();
-                if (line.startsWith('"') && line.endsWith('"') && line.includes(',')) {
-                    // Check if it's just one big quoted string that contains commas
-                    // We want to strip the outer quotes
-                    return line.slice(1, -1).replace(/""/g, '"'); // Handle escaped quotes
-                }
-                return line;
-            }).join('\n');
-
             // 3. Parse CSV
-            Papa.parse<CSVRow>(cleanText, {
+            Papa.parse<CSVRow>(text, {
                 header: true,
                 skipEmptyLines: true,
+                transformHeader: (header) => header.trim().toLowerCase(),
                 complete: async (results) => {
                     let successCount = 0;
                     let failCount = 0;
