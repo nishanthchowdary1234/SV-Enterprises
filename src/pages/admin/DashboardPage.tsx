@@ -145,14 +145,23 @@ export default function DashboardPage() {
                 return sum;
             }, 0) || 0;
 
+            // Calculate Daily Counter Revenue (Client-side)
+            const dailyCounterRevenue = counterSalesRes.data?.reduce((sum: number, sale: any) => {
+                if (sale.sale_date === today) {
+                    return sum + Number(sale.amount);
+                }
+                return sum;
+            }, 0) || 0;
+
             const dailyData = dailyRevenueRes.data || { total: 0, online: 0, counter: 0 };
-            // Ensure total is calculated correctly on client side to avoid RPC issues
-            const dailyTotal = dailyOnlineRevenue + (Number(dailyData.counter) || 0);
+            // Ensure total is calculated correctly on client side
+            const dailyTotal = dailyOnlineRevenue + dailyCounterRevenue;
 
             setStats({
                 dailyRevenue: {
                     ...dailyData,
                     online: dailyOnlineRevenue,
+                    counter: dailyCounterRevenue,
                     total: dailyTotal
                 },
                 revenue: totalRevenue,

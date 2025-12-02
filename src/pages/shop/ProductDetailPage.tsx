@@ -16,7 +16,7 @@ export default function ProductDetailPage() {
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
     const { toast } = useToast();
-    const { addItem } = useCartStore();
+    const { addItem, items, updateQuantity, removeItem } = useCartStore();
 
     useEffect(() => {
         if (slug) fetchProduct();
@@ -118,17 +118,52 @@ export default function ProductDetailPage() {
                     </p>
 
                     <div className="mt-auto space-y-4">
-                        <Button
-                            size="lg"
-                            className="w-full md:w-auto text-lg px-8"
-                            onClick={() => {
-                                addItem(product);
-                                toast({ title: "Added to cart", description: `${product.title} added to your cart.` });
-                            }}
-                        >
-                            <ShoppingCart className="mr-2 h-5 w-5" />
-                            Add to Cart
-                        </Button>
+                        {(() => {
+                            const cartItem = items.find(item => item.id === product.id);
+                            return cartItem ? (
+                                <div className="flex items-center gap-4 w-full md:w-auto">
+                                    <div className="flex items-center border rounded-md">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-10 w-10 rounded-none"
+                                            onClick={() => {
+                                                if (cartItem.quantity > 1) {
+                                                    updateQuantity(product.id, cartItem.quantity - 1);
+                                                } else {
+                                                    removeItem(product.id);
+                                                }
+                                            }}
+                                        >
+                                            -
+                                        </Button>
+                                        <span className="w-12 text-center font-medium">
+                                            {cartItem.quantity}
+                                        </span>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-10 w-10 rounded-none"
+                                            onClick={() => updateQuantity(product.id, cartItem.quantity + 1)}
+                                        >
+                                            +
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <Button
+                                    size="lg"
+                                    className="w-full md:w-auto text-lg px-8"
+                                    onClick={() => {
+                                        addItem(product);
+                                        toast({ title: "Added to cart", description: `${product.title} added to your cart.` });
+                                    }}
+                                >
+                                    <ShoppingCart className="mr-2 h-5 w-5" />
+                                    Add to Cart
+                                </Button>
+                            );
+                        })()}
                         <p className="text-sm text-gray-500 text-center md:text-left">
                             Free shipping on orders over ₹100
                         </p>
