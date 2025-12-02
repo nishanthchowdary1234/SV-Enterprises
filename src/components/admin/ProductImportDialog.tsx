@@ -72,10 +72,13 @@ export function ProductImportDialog({ onSuccess }: ProductImportDialogProps) {
             });
 
             // 3. Parse CSV
-            Papa.parse<CSVRow>(text, {
+            // Remove BOM if present
+            const cleanText = text.replace(/^\uFEFF/, '');
+
+            Papa.parse<CSVRow>(cleanText, {
                 header: true,
                 skipEmptyLines: true,
-                transformHeader: (header) => header.trim().toLowerCase(),
+                transformHeader: (header) => header.trim().toLowerCase().replace(/^["']|["']$/g, '').trim(),
                 complete: async (results) => {
                     let successCount = 0;
                     let failCount = 0;
