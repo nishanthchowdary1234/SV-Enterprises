@@ -3,7 +3,7 @@ import { Logo } from '@/components/Logo';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useCartStore } from '@/store/useCartStore';
 import { Button } from '@/components/ui/button';
-import { Search, ShoppingCart, Menu } from 'lucide-react';
+import { Search, ShoppingCart, Home } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -124,8 +124,8 @@ export default function Navbar() {
             {/* Sub-Navbar (Categories) */}
             <div className="bg-slate-800 text-white py-2 px-4 flex items-center gap-6 text-sm overflow-x-auto border-t border-slate-700">
                 <Link to="/" className="flex items-center gap-2 font-medium hover:text-primary transition-colors whitespace-nowrap">
-                    <Menu className="h-4 w-4" />
-                    All Categories
+                    <Home className="h-4 w-4" />
+                    Home
                 </Link>
                 <Link to="/products?sort=deals" className="hover:text-primary transition-colors whitespace-nowrap">Today's Deals</Link>
                 <Link to="/products" className="hover:text-primary transition-colors whitespace-nowrap">Products</Link>
