@@ -130,13 +130,7 @@ export default function ProductsPage() {
         if (!isBackground) setLoading(false);
     }
 
-    function handleSearch(e: React.FormEvent) {
-        e.preventDefault();
-        // Search is already handled by Input onChange updating URL in real-time or on submit?
-        // Actually, let's keep the local state for input but update URL on submit
-        // Wait, I removed local 'search' state. Let's fix that.
-        // Re-introducing local state for the input field only, to avoid excessive URL updates while typing
-    }
+
 
     // Helper to update URL params
     const updateParam = (key: string, value: string) => {
@@ -159,12 +153,7 @@ export default function ProductsPage() {
                             <Input
                                 placeholder="Search products..."
                                 defaultValue={search}
-                                onChange={(e) => {
-                                    // Debounce could be good here, but for now just update on blur or enter?
-                                    // Or just let it update URL on change (might be laggy).
-                                    // Let's use a simple approach: Update URL on Enter or Button click.
-                                    // But the previous code had a form.
-                                }}
+
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
                                         updateParam('q', e.currentTarget.value);
