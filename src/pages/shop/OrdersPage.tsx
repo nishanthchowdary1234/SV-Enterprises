@@ -97,27 +97,7 @@ export default function OrdersPage() {
                                                 <Link to={`/orders/${order.id}`}>View</Link>
                                             </Button>
 
-                                            {(order.status === 'pending' || order.status === 'paid') && (
-                                                <Button
-                                                    variant="destructive"
-                                                    size="sm"
-                                                    onClick={async () => {
-                                                        if (!confirm('Are you sure you want to cancel this order?')) return;
-                                                        const { error } = await supabase
-                                                            .from('orders')
-                                                            .update({ status: 'cancelled' })
-                                                            .eq('id', order.id);
-                                                        if (error) {
-                                                            console.error(error);
-                                                            alert('Failed to cancel order');
-                                                        } else {
-                                                            fetchOrders();
-                                                        }
-                                                    }}
-                                                >
-                                                    Cancel
-                                                </Button>
-                                            )}
+
 
                                             {order.status === 'delivered' && (
                                                 <Button

@@ -24,16 +24,14 @@ export default function ProductsPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchParams, setSearchParams] = useSearchParams();
-    const [search, setSearch] = useState(searchParams.get('q') || '');
+
+    // Derive state from URL
+    const search = searchParams.get('q') || '';
+    const sort = searchParams.get('sort') || 'newest';
+
     const [priceRange, setPriceRange] = useState([0, 1000]);
-    const [sort, setSort] = useState('newest');
     const { addItem, items, updateQuantity } = useCartStore();
     const { toast } = useToast();
-
-    useEffect(() => {
-        const sortParam = searchParams.get('sort');
-        if (sortParam) setSort(sortParam);
-    }, [searchParams]);
 
     useEffect(() => {
         fetchProducts();
@@ -52,7 +50,7 @@ export default function ProductsPage() {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [searchParams, sort]);
+    }, [searchParams]); // Re-run whenever URL params change
 
     async function fetchProducts(isBackground = false) {
         if (!isBackground) setLoading(true);
@@ -64,7 +62,6 @@ export default function ProductsPage() {
         while (attempts < maxAttempts) {
             try {
                 attempts++;
-                // 15 second timeout
                 const timeoutPromise = new Promise((_, reject) =>
                     setTimeout(() => reject(new Error('Timeout')), 15000)
                 );
@@ -81,9 +78,6 @@ export default function ProductsPage() {
                 } else if (sort === 'price-desc') {
                     query = query.order('price', { ascending: false });
                 } else if (sort === 'deals') {
-                    // For deals, we want items with compare_at_price > price.
-                    // Since we can't easily compare columns in simple query, we'll fetch items with compare_at_price not null
-                    // and filter in memory. We'll order by discount magnitude ideally, but for now just created_at
                     query = query.not('compare_at_price', 'is', null).order('created_at', { ascending: false });
                 } else {
                     query = query.order('created_at', { ascending: false });
@@ -116,7 +110,7 @@ export default function ProductsPage() {
 
                 // @ts-ignore
                 setProducts(fetchedProducts);
-                break; // Success, exit loop
+                break;
             } catch (error) {
                 console.error(`Attempt ${attempts} failed:`, error);
                 if (attempts === maxAttempts) {
@@ -128,7 +122,6 @@ export default function ProductsPage() {
                         });
                     }
                 } else {
-                    // Wait before retrying (exponential backoff: 1s, 2s)
                     await new Promise(resolve => setTimeout(resolve, attempts * 1000));
                 }
             }
@@ -139,12 +132,21 @@ export default function ProductsPage() {
 
     function handleSearch(e: React.FormEvent) {
         e.preventDefault();
-        setSearchParams(prev => {
-            if (search) prev.set('q', search);
-            else prev.delete('q');
-            return prev;
-        });
+        // Search is already handled by Input onChange updating URL in real-time or on submit?
+        // Actually, let's keep the local state for input but update URL on submit
+        // Wait, I removed local 'search' state. Let's fix that.
+        // Re-introducing local state for the input field only, to avoid excessive URL updates while typing
     }
+
+    // Helper to update URL params
+    const updateParam = (key: string, value: string) => {
+        setSearchParams(prev => {
+            const newParams = new URLSearchParams(prev);
+            if (value) newParams.set(key, value);
+            else newParams.delete(key);
+            return newParams;
+        });
+    };
 
     return (
         <div className="container py-8">
@@ -153,16 +155,32 @@ export default function ProductsPage() {
                 <aside className="w-full md:w-64 space-y-6">
                     <div>
                         <h3 className="font-semibold mb-4">Search</h3>
-                        <form onSubmit={handleSearch} className="flex gap-2">
+                        <div className="flex gap-2">
                             <Input
                                 placeholder="Search products..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
+                                defaultValue={search}
+                                onChange={(e) => {
+                                    // Debounce could be good here, but for now just update on blur or enter?
+                                    // Or just let it update URL on change (might be laggy).
+                                    // Let's use a simple approach: Update URL on Enter or Button click.
+                                    // But the previous code had a form.
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        updateParam('q', e.currentTarget.value);
+                                    }
+                                }}
                             />
-                            <Button type="submit" size="icon">
+                            <Button
+                                size="icon"
+                                onClick={(e) => {
+                                    const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                                    updateParam('q', input.value);
+                                }}
+                            >
                                 <Search className="h-4 w-4" />
                             </Button>
-                        </form>
+                        </div>
                     </div>
 
                     <div>
@@ -178,7 +196,10 @@ export default function ProductsPage() {
 
                     <div>
                         <h3 className="font-semibold mb-4">Sort By</h3>
-                        <Select value={sort} onValueChange={setSort}>
+                        <Select
+                            value={sort}
+                            onValueChange={(val) => updateParam('sort', val)}
+                        >
                             <SelectTrigger>
                                 <SelectValue placeholder="Newest" />
                             </SelectTrigger>
@@ -186,6 +207,7 @@ export default function ProductsPage() {
                                 <SelectItem value="newest">Newest</SelectItem>
                                 <SelectItem value="price-asc">Price: Low to High</SelectItem>
                                 <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                                <SelectItem value="deals">Today's Deals</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -194,7 +216,9 @@ export default function ProductsPage() {
                 {/* Product Grid */}
                 <div className="flex-1">
                     <div className="mb-6">
-                        <h1 className="text-3xl font-bold">All Products</h1>
+                        <h1 className="text-3xl font-bold">
+                            {sort === 'deals' ? "Today's Deals" : "All Products"}
+                        </h1>
                         <p className="text-gray-500">{products.length} results</p>
                     </div>
 
@@ -209,8 +233,8 @@ export default function ProductsPage() {
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             {products.map((product) => (
-                                <div key={product.id} className="group bg-white dark:bg-gray-800 rounded-lg border overflow-hidden transition-shadow hover:shadow-lg">
-                                    <Link to={`/products/${product.slug}`} className="block aspect-square bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                                <div key={product.id} className="group bg-white dark:bg-gray-800 rounded-lg border overflow-hidden transition-shadow hover:shadow-lg flex flex-col">
+                                    <Link to={`/products/${product.slug}`} className="block aspect-square bg-gray-100 dark:bg-gray-700 overflow-hidden relative">
                                         {product.image_url ? (
                                             <img
                                                 src={product.image_url}
@@ -222,15 +246,27 @@ export default function ProductsPage() {
                                                 No Image
                                             </div>
                                         )}
+                                        {/* Low Stock Badge */}
+                                        {product.stock_quantity > 0 && product.stock_quantity < 20 && (
+                                            <div className="absolute bottom-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                                Only {product.stock_quantity} left!
+                                            </div>
+                                        )}
+                                        {/* Out of Stock Badge */}
+                                        {product.stock_quantity === 0 && (
+                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                                <span className="bg-white text-black px-3 py-1 font-bold rounded">Out of Stock</span>
+                                            </div>
+                                        )}
                                     </Link>
-                                    <div className="p-4">
+                                    <div className="p-4 flex-1 flex flex-col">
                                         <p className="text-sm text-gray-500 mb-1">{product.category?.name}</p>
                                         <Link to={`/products/${product.slug}`}>
                                             <h3 className="font-semibold mb-2 hover:text-primary transition-colors line-clamp-1">
                                                 {product.title}
                                             </h3>
                                         </Link>
-                                        <div className="flex items-center justify-between mt-4">
+                                        <div className="mt-auto flex items-center justify-between">
                                             <span className="text-lg font-bold">₹{product.price}</span>
                                             {(() => {
                                                 const cartItem = items.find(item => item.id === product.id);
@@ -251,7 +287,18 @@ export default function ProductsPage() {
                                                             variant="outline"
                                                             size="icon"
                                                             className="h-8 w-8"
-                                                            onClick={() => updateQuantity(product.id, cartItem.quantity + 1)}
+                                                            disabled={cartItem.quantity >= product.stock_quantity}
+                                                            onClick={() => {
+                                                                if (cartItem.quantity < product.stock_quantity) {
+                                                                    updateQuantity(product.id, cartItem.quantity + 1);
+                                                                } else {
+                                                                    toast({
+                                                                        variant: "destructive",
+                                                                        title: "Max stock reached",
+                                                                        description: `Only ${product.stock_quantity} available.`
+                                                                    });
+                                                                }
+                                                            }}
                                                         >
                                                             <Plus className="h-3 w-3" />
                                                         </Button>
@@ -259,12 +306,13 @@ export default function ProductsPage() {
                                                 ) : (
                                                     <Button
                                                         size="sm"
+                                                        disabled={product.stock_quantity === 0}
                                                         onClick={() => {
                                                             addItem(product);
                                                             toast({ title: "Added to cart", description: `${product.title} added to your cart.` });
                                                         }}
                                                     >
-                                                        Add to Cart
+                                                        {product.stock_quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
                                                     </Button>
                                                 );
                                             })()}

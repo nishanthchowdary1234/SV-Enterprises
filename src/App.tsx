@@ -26,6 +26,7 @@ import OrderDetailPage from '@/pages/shop/OrderDetailPage';
 import OrdersPage from '@/pages/shop/OrdersPage';
 import ProfilePage from '@/pages/shop/ProfilePage';
 import CounterSalesPage from '@/pages/admin/sales/CounterSalesPage';
+import RestockPage from '@/pages/admin/inventory/RestockPage';
 import CustomerServicePage from '@/pages/CustomerServicePage';
 import CustomerServiceAdminPage from '@/pages/admin/CustomerServiceAdminPage';
 
@@ -88,6 +89,7 @@ function App() {
           <Route path="customers" element={<CustomersPage />} />
           <Route path="counter-sales" element={<CounterSalesPage />} />
           <Route path="counter-sales" element={<CounterSalesPage />} />
+          <Route path="restock" element={<RestockPage />} />
           <Route path="customer-service" element={<CustomerServiceAdminPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>

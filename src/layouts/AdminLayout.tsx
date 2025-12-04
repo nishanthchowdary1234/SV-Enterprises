@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingBag, Users, Settings, LogOut, Loader2, Layers, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingBag, Users, Settings, LogOut, Loader2, Layers, MessageSquare, ArrowDownToLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -10,6 +10,7 @@ const sidebarItems = [
     { icon: Layers, label: 'Categories', href: '/admin/categories' },
     { icon: ShoppingBag, label: 'Orders', href: '/admin/orders' },
     { icon: Users, label: 'Customers', href: '/admin/customers' },
+    { icon: ArrowDownToLine, label: 'Restock', href: '/admin/restock' },
     { icon: MessageSquare, label: 'Customer Service', href: '/admin/customer-service' },
     { icon: Settings, label: 'Settings', href: '/admin/settings' },
 ];

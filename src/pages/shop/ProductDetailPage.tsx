@@ -137,6 +137,18 @@ export default function ProductDetailPage() {
                     </p>
 
                     <div className="mt-auto space-y-4">
+                        {/* Low Stock Warning */}
+                        {product.stock_quantity > 0 && product.stock_quantity < 20 && (
+                            <div className="text-red-600 font-medium">
+                                Only {product.stock_quantity} left in stock!
+                            </div>
+                        )}
+                        {product.stock_quantity === 0 && (
+                            <div className="text-red-600 font-medium">
+                                Out of Stock
+                            </div>
+                        )}
+
                         {(() => {
                             const cartItem = items.find(item => item.id === product.id);
                             return cartItem ? (
@@ -163,7 +175,18 @@ export default function ProductDetailPage() {
                                             variant="ghost"
                                             size="icon"
                                             className="h-10 w-10 rounded-none"
-                                            onClick={() => updateQuantity(product.id, cartItem.quantity + 1)}
+                                            disabled={cartItem.quantity >= product.stock_quantity}
+                                            onClick={() => {
+                                                if (cartItem.quantity < product.stock_quantity) {
+                                                    updateQuantity(product.id, cartItem.quantity + 1);
+                                                } else {
+                                                    toast({
+                                                        variant: "destructive",
+                                                        title: "Max stock reached",
+                                                        description: `Only ${product.stock_quantity} available.`
+                                                    });
+                                                }
+                                            }}
                                         >
                                             +
                                         </Button>
@@ -173,13 +196,14 @@ export default function ProductDetailPage() {
                                 <Button
                                     size="lg"
                                     className="w-full md:w-auto text-lg px-8"
+                                    disabled={product.stock_quantity === 0}
                                     onClick={() => {
                                         addItem(product);
                                         toast({ title: "Added to cart", description: `${product.title} added to your cart.` });
                                     }}
                                 >
                                     <ShoppingCart className="mr-2 h-5 w-5" />
-                                    Add to Cart
+                                    {product.stock_quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
                                 </Button>
                             );
                         })()}
