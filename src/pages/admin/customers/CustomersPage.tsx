@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 type Customer = {
     id: string;
@@ -93,6 +94,33 @@ export default function CustomersPage() {
         }
     }
 
+    async function handleDeleteCustomer(customerId: string) {
+        if (!confirm('Are you sure you want to delete this customer? This action cannot be undone and will delete all their orders and data.')) {
+            return;
+        }
+
+        try {
+            const { error } = await supabase.rpc('delete_user', { target_user_id: customerId });
+
+            if (error) throw error;
+
+            toast({
+                title: "Customer deleted",
+                description: "The customer has been successfully removed.",
+            });
+
+            // Refresh list
+            fetchCustomers();
+        } catch (error: any) {
+            console.error('Error deleting customer:', error);
+            toast({
+                variant: "destructive",
+                title: "Error deleting customer",
+                description: error.message,
+            });
+        }
+    }
+
     if (loading) {
         return (
             <div className="flex h-96 items-center justify-center">
@@ -115,12 +143,13 @@ export default function CustomersPage() {
                             <TableHead>Email</TableHead>
                             <TableHead>Orders</TableHead>
                             <TableHead>Total Spent</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {customers.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={4} className="h-24 text-center text-gray-500">
+                                <TableCell colSpan={5} className="h-24 text-center text-gray-500">
                                     No customers found.
                                 </TableCell>
                             </TableRow>
@@ -131,6 +160,15 @@ export default function CustomersPage() {
                                     <TableCell>{customer.email || 'N/A'}</TableCell>
                                     <TableCell>{customer.total_orders}</TableCell>
                                     <TableCell>₹{customer.total_spent.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right">
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={() => handleDeleteCustomer(customer.id)}
+                                        >
+                                            Delete
+                                        </Button>
+                                    </TableCell>
                                 </TableRow>
                             ))
                         )}
