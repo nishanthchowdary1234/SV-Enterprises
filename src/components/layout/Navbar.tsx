@@ -16,12 +16,15 @@ import CartSheet from '@/components/cart/CartSheet';
 import { Input } from '@/components/ui/input';
 import { useTheme } from '@/components/theme-provider';
 import { Sun, Moon } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 
 export default function Navbar() {
     const { user, signOut } = useAuthStore();
     const { items } = useCartStore();
     const { theme, setTheme } = useTheme();
     const navigate = useNavigate();
+    const [unreadMessages, setUnreadMessages] = useState(0);
 
     const handleLogout = async () => {
         await signOut();
@@ -29,6 +32,50 @@ export default function Navbar() {
     };
 
     const cartItemCount = items.reduce((acc, item) => acc + item.quantity, 0);
+
+    useEffect(() => {
+        if (!user) {
+            setUnreadMessages(0);
+            return;
+        }
+
+        fetchUnreadCount();
+
+        const channel = supabase
+            .channel('navbar-chat')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'chat_messages',
+                    filter: `user_id=eq.${user.id}`,
+                },
+                () => {
+                    fetchUnreadCount();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [user]);
+
+    async function fetchUnreadCount() {
+        if (!user) return;
+
+        const { count, error } = await supabase
+            .from('chat_messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('is_admin', true)
+            .eq('is_read', false);
+
+        if (!error) {
+            setUnreadMessages(count || 0);
+        }
+    }
 
     return (
         <header className="sticky top-0 z-50 w-full flex flex-col">
@@ -130,7 +177,12 @@ export default function Navbar() {
                 <Link to="/products?sort=deals" className="hover:text-primary transition-colors whitespace-nowrap">Today's Deals</Link>
                 <Link to="/products" className="hover:text-primary transition-colors whitespace-nowrap">Products</Link>
                 <Link to="/categories" className="hover:text-primary transition-colors whitespace-nowrap">Categories</Link>
-                <Link to="/customer-service" className="hover:text-primary transition-colors whitespace-nowrap">Customer Service</Link>
+                <Link to="/customer-service" className="hover:text-primary transition-colors whitespace-nowrap relative">
+                    Customer Service
+                    {unreadMessages > 0 && (
+                        <span className="absolute -top-1 -right-2 h-2 w-2 bg-red-500 rounded-full animate-pulse"></span>
+                    )}
+                </Link>
             </div>
         </header>
     );

@@ -11,6 +11,7 @@ interface Message {
     user_id: string;
     message: string;
     is_admin: boolean;
+    is_read: boolean;
     created_at: string;
 }
 
@@ -26,6 +27,7 @@ export default function CustomerServicePage() {
         if (user) {
             fetchMessages();
             subscribeToMessages();
+            markMessagesAsRead();
         } else {
             setLoading(false);
         }
@@ -52,23 +54,43 @@ export default function CustomerServicePage() {
         setLoading(false);
     }
 
+    async function markMessagesAsRead() {
+        if (!user) return;
+
+        await supabase
+            .from('chat_messages')
+            .update({ is_read: true })
+            .eq('user_id', user.id)
+            .eq('is_admin', true) // Mark admin messages as read
+            .eq('is_read', false);
+    }
+
     function subscribeToMessages() {
         const channel = supabase
             .channel('chat-user')
             .on(
                 'postgres_changes',
                 {
-                    event: 'INSERT',
+                    event: '*',
                     schema: 'public',
                     table: 'chat_messages',
                     filter: `user_id=eq.${user!.id}`,
                 },
                 (payload) => {
-                    const newMessage = payload.new as Message;
-                    setMessages((prev) => {
-                        if (prev.some(m => m.id === newMessage.id)) return prev;
-                        return [...prev, newMessage];
-                    });
+                    if (payload.eventType === 'INSERT') {
+                        const newMessage = payload.new as Message;
+                        setMessages((prev) => {
+                            if (prev.some(m => m.id === newMessage.id)) return prev;
+                            return [...prev, newMessage];
+                        });
+                        // If we receive an admin message, mark it as read since we are here
+                        if (newMessage.is_admin) {
+                            markMessagesAsRead();
+                        }
+                    } else if (payload.eventType === 'DELETE') {
+                        const deletedId = payload.old.id;
+                        setMessages(prev => prev.filter(m => m.id !== deletedId));
+                    }
                 }
             )
             .subscribe();
@@ -92,6 +114,7 @@ export default function CustomerServicePage() {
                     user_id: user.id,
                     message: messageToSend,
                     is_admin: false,
+                    is_read: false
                 },
             ])
             .select()
