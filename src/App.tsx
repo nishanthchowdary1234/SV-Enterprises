@@ -30,6 +30,16 @@ import RestockPage from '@/pages/admin/inventory/RestockPage';
 import CustomerServicePage from '@/pages/CustomerServicePage';
 import CustomerServiceAdminPage from '@/pages/admin/CustomerServiceAdminPage';
 
+// Footer Pages
+import OurStoryPage from '@/pages/about/OurStoryPage';
+import CareersPage from '@/pages/about/CareersPage';
+import PressPage from '@/pages/about/PressPage';
+import HelpCenterPage from '@/pages/support/HelpCenterPage';
+import ReturnsPage from '@/pages/support/ReturnsPage';
+import ContactUsPage from '@/pages/support/ContactUsPage';
+import PrivacyPolicyPage from '@/pages/legal/PrivacyPolicyPage';
+import TermsOfServicePage from '@/pages/legal/TermsOfServicePage';
+
 import { useCartStore } from '@/store/useCartStore';
 
 function App() {
@@ -69,6 +79,16 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/customer-service" element={<CustomerServicePage />} />
+
+          {/* Footer Routes */}
+          <Route path="/about" element={<OurStoryPage />} />
+          <Route path="/careers" element={<CareersPage />} />
+          <Route path="/press" element={<PressPage />} />
+          <Route path="/help" element={<HelpCenterPage />} />
+          <Route path="/returns" element={<ReturnsPage />} />
+          <Route path="/contact" element={<ContactUsPage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms" element={<TermsOfServicePage />} />
 
           <Route element={<ProtectedRoute />}>
             <Route path="/profile" element={<ProfilePage />} />
