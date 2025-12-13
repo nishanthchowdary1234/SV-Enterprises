@@ -39,7 +39,7 @@ export default function DealOfTheDay() {
 
             if (data && data.length > 0) {
                 // Find the product with the highest discount percentage
-                let bestDeal = data[0];
+                let bestDeal: Product | null = null;
                 let maxDiscount = 0;
 
                 data.forEach(product => {
@@ -52,8 +52,12 @@ export default function DealOfTheDay() {
                     }
                 });
 
-                setDealProduct(bestDeal);
-                setDiscount(Math.round(maxDiscount));
+                if (bestDeal) {
+                    setDealProduct(bestDeal);
+                    setDiscount(Math.round(maxDiscount));
+                } else {
+                    setDealProduct(null);
+                }
             }
         } catch (error) {
             console.error("Error fetching deal of the day:", error);
@@ -107,7 +111,9 @@ export default function DealOfTheDay() {
 
                 <div className="flex items-baseline gap-2 mb-2">
                     <span className="text-2xl font-bold text-red-600">₹{dealProduct.price}</span>
-                    <span className="text-sm text-gray-500 line-through">₹{dealProduct.compare_at_price}</span>
+                    {dealProduct.compare_at_price && dealProduct.compare_at_price > dealProduct.price && (
+                        <span className="text-sm text-gray-500 line-through">₹{dealProduct.compare_at_price}</span>
+                    )}
                 </div>
 
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">

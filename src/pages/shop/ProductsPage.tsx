@@ -29,7 +29,7 @@ export default function ProductsPage() {
     const search = searchParams.get('q') || '';
     const sort = searchParams.get('sort') || 'newest';
 
-    const [priceRange, setPriceRange] = useState([0, 1000]);
+    const [priceRange, setPriceRange] = useState([0, 10000]);
     const { addItem, items, updateQuantity } = useCartStore();
     const { toast } = useToast();
 
@@ -50,7 +50,7 @@ export default function ProductsPage() {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [searchParams]); // Re-run whenever URL params change
+    }, [searchParams, priceRange]); // Re-run whenever URL params or price range changes
 
     async function fetchProducts(isBackground = false) {
         if (!isBackground) setLoading(true);
@@ -85,12 +85,18 @@ export default function ProductsPage() {
 
                 const searchQuery = searchParams.get('q');
                 if (searchQuery) {
-                    query = query.ilike('title', `%${searchQuery}%`);
+                    const terms = searchQuery.split(/\s+/).filter(Boolean);
+                    terms.forEach(term => {
+                        query = query.or(`title.ilike.%${term}%,description.ilike.%${term}%`);
+                    });
                 }
 
                 if (category) {
                     query = query.eq('category.name', category);
                 }
+
+                // Apply Price Filter
+                query = query.gte('price', priceRange[0]).lte('price', priceRange[1]);
 
                 const { data, error } = await Promise.race([
                     query,
@@ -175,12 +181,17 @@ export default function ProductsPage() {
                     <div>
                         <h3 className="font-semibold mb-4">Price Range</h3>
                         <Slider
-                            defaultValue={[0, 1000]}
-                            max={1000}
-                            step={1}
+                            defaultValue={[0, 10000]}
+                            max={10000}
+                            step={100}
                             value={priceRange}
                             onValueChange={setPriceRange}
+                            className="mb-4"
                         />
+                        <div className="flex justify-between text-sm text-gray-500">
+                            <span>₹{priceRange[0]}</span>
+                            <span>₹{priceRange[1]}</span>
+                        </div>
                     </div>
 
                     <div>

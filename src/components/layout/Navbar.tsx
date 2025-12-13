@@ -25,6 +25,21 @@ export default function Navbar() {
     const { theme, setTheme } = useTheme();
     const navigate = useNavigate();
     const [unreadMessages, setUnreadMessages] = useState(0);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [suggestions, setSuggestions] = useState<any[]>([]);
+    const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+    async function fetchSuggestions(query: string) {
+        const { data } = await supabase
+            .from('products')
+            .select('id, title, slug')
+            .ilike('title', `%${query}%`)
+            .limit(5);
+
+        if (data) {
+            setSuggestions(data);
+        }
+    }
 
     const handleLogout = async () => {
         await signOut();
@@ -89,16 +104,74 @@ export default function Navbar() {
                     </Link>
 
                     {/* Search Bar */}
-                    <div className="flex-1 max-w-3xl flex items-center h-10 rounded-full overflow-hidden border border-gray-600 focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent bg-white/10">
-                        <Input
-                            type="text"
-                            placeholder="Search for products..."
-                            className="h-full border-none focus-visible:ring-0 bg-transparent text-white placeholder:text-gray-400 px-4"
-                        />
-                        <Button className="h-full rounded-none bg-primary hover:bg-primary/90 text-white border-none px-6">
-                            <Search className="h-5 w-5" />
-                        </Button>
+                    <div className="flex-1 max-w-3xl relative z-50">
+                        <div className="flex items-center h-10 rounded-full overflow-hidden border border-gray-600 focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent bg-white/10 relative z-50">
+                            <Input
+                                type="text"
+                                placeholder="Search for products..."
+                                className="h-full border-none focus-visible:ring-0 bg-transparent text-white placeholder:text-gray-400 px-4"
+                                onFocus={() => setIsSearchFocused(true)}
+                                onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)} // Delay to allow clicking suggestions
+                                onChange={(e) => {
+                                    const query = e.target.value;
+                                    setSearchQuery(query);
+                                    if (query.length > 1) {
+                                        fetchSuggestions(query);
+                                    } else {
+                                        setSuggestions([]);
+                                    }
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        if (searchQuery) {
+                                            navigate(`/products?q=${encodeURIComponent(searchQuery)}`);
+                                            setIsSearchFocused(false);
+                                        }
+                                    }
+                                }}
+                            />
+                            <Button
+                                className="h-full rounded-none bg-primary hover:bg-primary/90 text-white border-none px-6"
+                                onClick={() => {
+                                    if (searchQuery) {
+                                        navigate(`/products?q=${encodeURIComponent(searchQuery)}`);
+                                        setIsSearchFocused(false);
+                                    }
+                                }}
+                            >
+                                <Search className="h-5 w-5" />
+                            </Button>
+                        </div>
+
+                        {/* Search Suggestions */}
+                        {isSearchFocused && suggestions.length > 0 && (
+                            <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50">
+                                {suggestions.map((product) => (
+                                    <div
+                                        key={product.id}
+                                        className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer flex items-center gap-3 transition-colors"
+                                        onClick={() => {
+                                            navigate(`/products/${product.slug}`);
+                                            setIsSearchFocused(false);
+                                        }}
+                                    >
+                                        <Search className="h-4 w-4 text-gray-400" />
+                                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                            {product.title}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
+
+                    {/* Dimming Overlay */}
+                    {isSearchFocused && (
+                        <div
+                            className="fixed inset-0 bg-black/40 z-40 backdrop-blur-[1px] transition-opacity duration-300"
+                            onClick={() => setIsSearchFocused(false)}
+                        />
+                    )}
 
                     {/* Right Side Actions */}
                     <div className="flex items-center gap-4">
@@ -129,7 +202,7 @@ export default function Navbar() {
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem asChild><Link to="/profile">Profile</Link></DropdownMenuItem>
                                         <DropdownMenuItem asChild><Link to="/orders">Orders</Link></DropdownMenuItem>
-                                        <DropdownMenuItem asChild><Link to="/settings">Settings</Link></DropdownMenuItem>
+                                        <DropdownMenuItem asChild><Link to="/profile?tab=settings">Settings</Link></DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
                                     </>

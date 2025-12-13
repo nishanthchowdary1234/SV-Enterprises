@@ -7,11 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Package, User as UserIcon } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
 export default function ProfilePage() {
     const { user } = useAuthStore();
+    const [searchParams] = useSearchParams();
     const [loading, setLoading] = useState(true);
     const [orders, setOrders] = useState<any[]>([]);
     const [profile, setProfile] = useState<any>(null);
@@ -115,11 +116,13 @@ export default function ProfilePage() {
         );
     }
 
+    const defaultTab = searchParams.get('tab') || 'overview';
+
     return (
         <div className="container py-10 max-w-4xl">
             <h1 className="text-3xl font-bold mb-8">My Account</h1>
 
-            <Tabs defaultValue="overview" className="space-y-6">
+            <Tabs defaultValue={defaultTab} className="space-y-6">
                 <TabsList>
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="orders">Orders</TabsTrigger>

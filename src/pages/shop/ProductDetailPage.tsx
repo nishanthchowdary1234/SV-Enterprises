@@ -125,7 +125,7 @@ export default function ProductDetailPage() {
 
                     <div className="text-3xl font-bold mb-8">
                         ₹{product.price}
-                        {product.compare_at_price && (
+                        {product.compare_at_price && product.compare_at_price > product.price && (
                             <span className="ml-3 text-lg text-gray-400 line-through">
                                 ₹{product.compare_at_price}
                             </span>
